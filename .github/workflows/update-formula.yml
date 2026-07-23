@@ -1,0 +1,53 @@
+name: Update Formula
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # gh-prs requires Python >= 3.14
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          pip install setuptools
+          pip install gh-prs homebrew-pypi-poet
+
+      - name: Generate formula
+        run: |
+          mkdir -p Formula
+          poet -f gh-prs > Formula/gh-prs.rb
+
+          # Patch desc, homepage, license, and test block
+          sed -i 's|desc ".*"|desc "CLI for listing GitHub pull requests that need your attention"|' Formula/gh-prs.rb
+          sed -i 's|homepage ".*"|homepage "https://github.com/denrou/gh-prs"|' Formula/gh-prs.rb
+          sed -i '/^  sha256/a\  license "MIT"' Formula/gh-prs.rb
+          sed -i 's|.*false.*|    assert_predicate bin/"gh-prs", :exist?|' Formula/gh-prs.rb
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet Formula/gh-prs.rb 2>/dev/null && [ -n "$(git ls-files Formula/gh-prs.rb)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          VERSION=$(grep -oP 'gh_prs-\K[0-9]+\.[0-9]+\.[0-9]+' Formula/gh-prs.rb | head -1)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/gh-prs.rb
+          git commit -m "Update gh-prs to ${VERSION}"
+          git push
