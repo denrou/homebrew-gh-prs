@@ -12,42 +12,55 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          # gh-prs requires Python >= 3.14
-          python-version: "3.14"
+      - uses: Homebrew/actions/setup-homebrew@master
 
-      - name: Install dependencies
+      # Let brew resolve this checkout as the denrou/gh-prs tap so
+      # `update-python-resources` can operate on it (and edit it in place).
+      - name: Register checkout as a tap
         run: |
-          pip install setuptools
-          pip install gh-prs homebrew-pypi-poet
+          taps="$(brew --repository)/Library/Taps/denrou"
+          mkdir -p "$taps"
+          ln -s "$GITHUB_WORKSPACE" "$taps/homebrew-gh-prs"
 
-      - name: Generate formula
+      # Point the formula's own url/sha256 at the latest PyPI sdist. The
+      # version is carried in the url, so there is no separate version line
+      # to bump; update-python-resources infers it from the url below.
+      - name: Bump to the latest release
         run: |
-          mkdir -p Formula
-          poet -f gh-prs > Formula/gh-prs.rb
+          read -r url sha256 <<EOF
+          $(python3 - <<'PY'
+          import json, urllib.request
+          d = json.load(urllib.request.urlopen("https://pypi.org/pypi/gh-prs/json"))
+          v = d["info"]["version"]
+          sdist = next(u for u in d["releases"][v] if u["packagetype"] == "sdist")
+          print(sdist["url"], sdist["digests"]["sha256"])
+          PY
+          )
+          EOF
+          sed -i -E "s#^  url \".*\"#  url \"${url}\"#" Formula/gh-prs.rb
+          sed -i -E "s#^  sha256 \".*\"#  sha256 \"${sha256}\"#" Formula/gh-prs.rb
 
-          # Patch desc, homepage, license, and test block
-          sed -i 's|desc ".*"|desc "CLI for listing GitHub pull requests that need your attention"|' Formula/gh-prs.rb
-          sed -i 's|homepage ".*"|homepage "https://github.com/denrou/gh-prs"|' Formula/gh-prs.rb
-          sed -i '/^  sha256/a\  license "MIT"' Formula/gh-prs.rb
-          sed -i 's|.*false.*|    assert_predicate bin/"gh-prs", :exist?|' Formula/gh-prs.rb
-
-      - name: Check for changes
-        id: diff
+      # Regenerate the dependency resource blocks with Homebrew's own tooling
+      # (the maintained replacement for homebrew-pypi-poet).
+      # --ignore-main-package-cooldown lets this run the same day as a release:
+      # PyPI's fresh-upload guard would otherwise hide the just-published
+      # version. Dependencies are long-published, so they still respect it.
+      - name: Regenerate resources
         run: |
-          if git diff --quiet Formula/gh-prs.rb 2>/dev/null && [ -n "$(git ls-files Formula/gh-prs.rb)" ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+          brew update-python-resources --ignore-main-package-cooldown \
+            denrou/gh-prs/gh-prs
+
+      - name: Sanity-check the formula
+        run: brew style denrou/gh-prs/gh-prs
+
+      - name: Commit and push if changed
+        run: |
+          if git diff --quiet -- Formula/gh-prs.rb; then
+            echo "Formula already up to date; nothing to commit."
+            exit 0
           fi
-
-      - name: Commit and push
-        if: steps.diff.outputs.changed == 'true'
-        run: |
-          VERSION=$(grep -oP 'gh_prs-\K[0-9]+\.[0-9]+\.[0-9]+' Formula/gh-prs.rb | head -1)
+          version="$(python3 -c 'import json,urllib.request;print(json.load(urllib.request.urlopen("https://pypi.org/pypi/gh-prs/json"))["info"]["version"])')"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/gh-prs.rb
-          git commit -m "Update gh-prs to ${VERSION}"
+          git commit -am "Update gh-prs to ${version}"
           git push
