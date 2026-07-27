@@ -12,7 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: Homebrew/actions/setup-homebrew@master
+      # Pinned: the master ref is deprecated and will hard-error at Homebrew 5.2.0.
+      - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
 
       # Let brew resolve this checkout as the denrou/gh-prs tap so
       # `update-python-resources` can operate on it (and edit it in place).
@@ -63,4 +64,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "Update gh-prs to ${version}"
-          git push
+          # An explicit refspec: the Actions checkout has no upstream, so a
+          # bare `git push` dies with "no upstream branch".
+          git push origin HEAD:main
