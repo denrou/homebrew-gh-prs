@@ -55,6 +55,8 @@ jobs:
         run: brew style denrou/gh-prs/gh-prs
 
       - name: Commit and push if changed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           if git diff --quiet -- Formula/gh-prs.rb; then
             echo "Formula already up to date; nothing to commit."
@@ -64,6 +66,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "Update gh-prs to ${version}"
-          # An explicit refspec: the Actions checkout has no upstream, so a
-          # bare `git push` dies with "no upstream branch".
+          # Authenticate the push explicitly: checkout's persisted auth header
+          # doesn't survive the Homebrew tap-symlink environment, so a plain
+          # `git push origin` has no credentials here. The refspec is needed
+          # too — the checkout has no upstream branch.
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin HEAD:main
