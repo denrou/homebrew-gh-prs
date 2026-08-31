@@ -3,8 +3,8 @@ class GhPrs < Formula
 
   desc "CLI for listing GitHub pull requests that need your attention"
   homepage "https://github.com/denrou/gh-prs"
-  url "https://files.pythonhosted.org/packages/07/ac/888d719efd2e00b553bcda8f95c96d77f5cbe61730fc42fa50ceb54afe50/gh_prs-0.9.2.tar.gz"
-  sha256 "30083a2334055afe1681452829f7b59c1542e82847010a2e2c3e7684e2b09a6d"
+  url "https://files.pythonhosted.org/packages/5a/d8/0fb38e24d13e738f118f275eacfd80e95ce9fd5ee5627499fe4a2462a6fd/gh_prs-0.10.0.tar.gz"
+  sha256 "ebf3184164351b9f256ef17df19cddfe232c5865557474a0d97d43cd86950d0b"
   license "MIT"
 
   depends_on "python@3.14"
@@ -20,8 +20,8 @@ class GhPrs < Formula
   end
 
   resource "pygments" do
-    url "https://files.pythonhosted.org/packages/c3/b2/bc9c9196916376152d655522fdcebac55e66de6603a76a02bca1b6414f6c/pygments-2.20.0.tar.gz"
-    sha256 "6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f"
+    url "https://files.pythonhosted.org/packages/49/2e/ced460408999b33da6b31b0021b0f37d329e202d4169aeb164493778f25b/pygments-2.21.0.tar.gz"
+    sha256 "610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c"
   end
 
   resource "rich" do
