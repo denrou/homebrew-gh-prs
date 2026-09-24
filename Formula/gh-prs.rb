@@ -3,8 +3,8 @@ class GhPrs < Formula
 
   desc "CLI for listing GitHub pull requests that need your attention"
   homepage "https://github.com/denrou/gh-prs"
-  url "https://files.pythonhosted.org/packages/ab/73/dba5601bd8b171e1921840fca34a45d884979f1f68f51a95c46b2c3112cb/gh_prs-0.13.0.tar.gz"
-  sha256 "aeee8a71827a9024ee5d537893a81b8463806219ef9479db5fad4ac4c923216e"
+  url "https://files.pythonhosted.org/packages/f4/5b/472c7496cb2192d1919f3d16a7939b60435fe549e56a85a9437d1b8aec08/gh_prs-0.14.0.tar.gz"
+  sha256 "5b55253ccbc116df1e01986ffc1bedb79a2867593358bf80504c1f9e3355f135"
   license "MIT"
 
   depends_on "python@3.14"
